@@ -1,70 +1,49 @@
-import http, { Server } from "http";
+import { Server } from "http";
 import app from "./app";
-import dotenv from "dotenv";
-import { connectToDatabase } from "./app/config/db";
 import { envVars } from "./app/config/env";
+import { connectToDatabase } from "./app/config/db";
 
-dotenv.config();
+async function bootstrap() {
+  // This variable will hold our server instance
+  let server: Server;
 
-let server: Server | null = null;
-
-async function startServer() {
   try {
     await connectToDatabase();
-    server = http.createServer(app);
-    server.listen(envVars.PORT, () => {
-      console.log(`🚀 Server is running on port ${envVars.PORT}`);
+    // Start the server
+    server = app.listen(envVars.PORT, () => {
+      console.log(`🚀 Server is running on http://localhost:${envVars.PORT}`);
     });
 
-    handleProcessEvents();
+    // Function to gracefully shut down the server
+    const exitHandler = () => {
+      if (server) {
+        server.close(() => {
+          console.log("Server closed gracefully.");
+          process.exit(1); // Exit with a failure code
+        });
+      } else {
+        process.exit(1);
+      }
+    };
+
+    // Handle unhandled promise rejections
+    process.on("unhandledRejection", (error) => {
+      console.log(
+        "Unhandled Rejection is detected, we are closing our server..."
+      );
+      if (server) {
+        server.close(() => {
+          console.log(error);
+          process.exit(1);
+        });
+      } else {
+        process.exit(1);
+      }
+    });
   } catch (error) {
-    console.error("❌ Error during server startup:", error);
+    console.error("Error during server startup:", error);
     process.exit(1);
   }
 }
 
-/**
- * Gracefully shutdown the server and close database connections.
- * @param {string} signal - The termination signal received.
- */
-async function gracefulShutdown(signal: string) {
-  console.warn(`🔄 Received ${signal}, shutting down gracefully...`);
-
-  if (server) {
-    server.close(async () => {
-      console.log("✅ HTTP server closed.");
-
-      try {
-        console.log("Server shutdown complete.");
-      } catch (error) {
-        console.error("❌ Error during shutdown:", error);
-      }
-
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
-}
-
-/**
- * Handle system signals and unexpected errors.
- */
-function handleProcessEvents() {
-  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-
-  process.on("uncaughtException", (error) => {
-    console.error("💥 Uncaught Exception:", error);
-    gracefulShutdown("uncaughtException");
-  });
-
-  process.on("unhandledRejection", (reason) => {
-    console.error("💥 Unhandled Rejection:", reason);
-    gracefulShutdown("unhandledRejection");
-  });
-}
-
-// Start the application
-
-startServer();
+bootstrap();

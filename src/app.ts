@@ -1,31 +1,38 @@
-import compression from "compression";
+import express, { Application, NextFunction, Request, Response } from "express";
 import cors from "cors";
-import express from "express";
-import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
+
+import cookieParser from "cookie-parser";
+import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import { router } from "./app/routes";
+import { envVars } from "./app/config/env";
 
-const app = express();
-
-// Middleware
-app.use(cors()); // Enables Cross-Origin Resource Sharing
-app.use(compression()); // Compresses response bodies for faster delivery
-app.use(express.json()); // Parse incoming JSON requests
-
+const app: Application = express();
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3001",
     credentials: true,
   })
 );
 
+//parser
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
+
 app.use("/api/v1", router);
-// Default route for testing
-app.get("/", (_req, res) => {
-  res.send("API is running");
+
+app.get("/", (req: Request, res: Response) => {
+  res.send({
+    message: "Server is running..",
+    environment: envVars.NODE_ENV,
+    uptime: process.uptime().toFixed(2) + " sec",
+    timeStamp: new Date().toISOString(),
+  });
 });
 
 app.use(globalErrorHandler);
+
 app.use(notFound);
 
 export default app;
