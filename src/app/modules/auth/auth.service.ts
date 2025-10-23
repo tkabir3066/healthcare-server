@@ -1,10 +1,8 @@
 import { UserStatus } from "@prisma/client";
 import { prisma } from "../../config/db";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import AppError from "../../errorHelpers/AppError";
 import { StatusCodes } from "http-status-codes";
-import { email } from "zod";
 import { generateToken } from "../../utils/jwt";
 import { envVars } from "../../config/env";
 
