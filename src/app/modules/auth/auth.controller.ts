@@ -24,9 +24,10 @@ const credentialsLogin = catchAsync(
       success: true,
       statusCode: StatusCodes.CREATED,
       message: "User Logged In successfully",
-      data: {
-        needPasswordChange: loginInfo.needPasswordChange,
-      },
+      data: loginInfo,
+      // {
+      //   needPasswordChange: loginInfo.needPasswordChange,
+      // },
     });
   }
 );
